@@ -1,0 +1,142 @@
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="papaparse.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="../Users/hp/bower_components/synaptic/dist/synaptic.js"></script>
+
+<script>
+var data;
+var x;
+var y;
+var z;
+
+  function handleFileSelect(evt) {
+    var file = evt.target.files[0];
+
+    console.log(file);
+    Papa.parse(file, {
+      header: true,
+      dynamicTyping: true,
+      complete: function(results) {
+        data = results.data;
+      }
+    });
+  }
+
+  $(document).ready(function(){
+    $("#housing-file").change(handleFileSelect);
+  });
+</script>
+
+<input type="file" id="housing-file" name="files"/>
+
+<button id="plotReg">Click me</button>
+<div id="graphContainer"></div>
+<script type="text/javascript">
+
+    document.getElementById("plotReg").addEventListener("click", plotFunction);
+
+    function plotFunction() {
+      x = [];
+      y = [];
+      data.forEach(function(elem){
+            x.push(elem['sqft_living']);
+            y.push(elem['price']);
+      });
+    let data_area = {
+        x: x,
+        y: y,
+        mode: 'markers',
+  //      type: 'scatter3d'
+        type: 'scatter'
+    };
+
+    console.log(data_area);
+    Plotly.newPlot('graphContainer', [data_area]);
+    }
+
+</script>
+
+<button id="trainReg">Click me</button>
+<div id="trainingContainer"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/synaptic/1.1.4/synaptic.js"></script>
+<script type="text/javascript">
+document.getElementById("trainReg").addEventListener("click", trainFunction);
+
+
+function trainFunction(){
+
+        var Neuron = synaptic.Neuron;
+        const trainingData = [];
+
+/*        for (let i = 0; i < 200; i++) {
+            trainingData.push({
+                input: x[i],
+                output: y[i]
+            });
+        }*/
+        var x_norm = [];
+        var y_norm = [];
+
+        function normalizeData(arr, new_arr) {
+            var min = Math.max.apply(null, arr);
+            var max = Math.min.apply(null, arr);
+            console.log(max);
+            console.log(min);
+
+            arr.forEach(function(elem){
+                new_arr.push((elem - min)/(max-min));
+            });
+        }
+
+
+        console.log(trainingData);
+        normalizeData(x, x_norm);
+        normalizeData(y, y_norm);
+        console.log(x_norm);
+        console.log(x);
+        console.log(y);
+
+        const { Layer, Network } = window.synaptic;
+        var inputLayer = new Layer(1);
+        var hiddenLayer = new Layer(3);
+        var outputLayer = new Layer(1);
+
+        inputLayer.project(hiddenLayer);
+        hiddenLayer.project(outputLayer);
+
+        var myNetwork = new Network({
+                input: inputLayer,
+                hidden: [hiddenLayer],
+                output: outputLayer
+        });
+
+        inputLayer.set({
+            squash: Neuron.squash.BENT_IDENTITY
+        });
+
+        hiddenLayer.set({
+            squash: Neuron.squash.BENT_IDENTITY
+        });
+
+        outputLayer.set({
+            squash: Neuron.squash.BENT_IDENTITY
+        });
+
+        var learningRate = .1;
+        for (var i = 0; i < 3000; i++) {
+            for (var j = 1; j < 200; j++){
+                console.log(x_norm[j]);
+                result = myNetwork.activate([x_norm[j]]);
+                console.log(result);
+                myNetwork.propagate(learningRate, [y_norm[j]]);
+                console.log(y_norm[j]);
+            }
+        }
+
+        result = myNetwork.activate([0.252]);
+        console.log(result);
+
+}
+</script>
